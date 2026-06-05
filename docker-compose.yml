@@ -1,0 +1,57 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: reservas-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: reservas_db
+      MYSQL_USER: reservas_user
+      MYSQL_PASSWORD: reservas_pass
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8mb4_unicode_ci
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --character-set-client-handshake=FALSE
+      --skip-character-set-client-handshake
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - reservas-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  reservas-service:
+    build:
+      context: .
+      dockerfile: src/main/docker/Dockerfile.jvm
+    container_name: reservas-service
+    ports:
+      - "8080:8080"
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: reservas_db
+      DB_USERNAME: reservas_user
+      DB_PASSWORD: reservas_pass
+      QUARKUS_DATASOURCE_REACTIVE_URL: mysql://mysql:3306/reservas_db?charset=utf8mb4&collation=utf8mb4_unicode_ci
+      QUARKUS_DATASOURCE_USERNAME: reservas_user
+      QUARKUS_DATASOURCE_PASSWORD: reservas_pass
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:mysql://mysql:3306/reservas_db?useUnicode=true&characterEncoding=UTF-8&connectionCollation=utf8mb4_unicode_ci
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - reservas-network
+
+volumes:
+  mysql_data:
+
+networks:
+  reservas-network:
+    driver: bridge

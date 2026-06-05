@@ -1,0 +1,711 @@
+{
+  "info": {
+    "name": "Reservas Service API",
+    "description": "Colección completa para el microservicio de reservas de profesionales - Quarkus",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "reservas-service-fivecods-2026"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Genera un X-Trace-Id único (UUID v4) por cada request",
+          "function generateUUID() {",
+          "    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {",
+          "        var r = Math.random() * 16 | 0;",
+          "        var v = c === 'x' ? r : (r & 0x3 | 0x8);",
+          "        return v.toString(16);",
+          "    });",
+          "}",
+          "pm.collectionVariables.set('traceId', generateUUID());",
+          "console.log('[TraceId generado]', pm.collectionVariables.get('traceId'));"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Extrae y muestra el X-Trace-Id que devuelve el servidor en la respuesta",
+          "const traceIdResponse = pm.response.headers.get('X-Trace-Id');",
+          "if (traceIdResponse) {",
+          "    pm.collectionVariables.set('lastResponseTraceId', traceIdResponse);",
+          "    console.log('[X-Trace-Id respuesta]', traceIdResponse);",
+          "    pm.test('X-Trace-Id presente en respuesta', () => pm.expect(traceIdResponse).to.not.be.empty);",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "traceId",
+      "value": "",
+      "type": "string",
+      "description": "UUID generado automáticamente en cada request (pre-request script)"
+    },
+    {
+      "key": "lastResponseTraceId",
+      "value": "",
+      "type": "string",
+      "description": "X-Trace-Id recibido en la última respuesta del servidor"
+    },
+    {
+      "key": "profesionalId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "clienteId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "horarioId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "reservaId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Profesionales",
+      "item": [
+        {
+          "name": "Crear profesional",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    pm.collectionVariables.set('profesionalId', body.id);",
+                  "    pm.test('Profesional creado correctamente', () => pm.response.to.have.status(201));",
+                  "    pm.test('Tiene id', () => pm.expect(body.id).to.not.be.empty);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Trace-Id", "value": "{{traceId}}", "description": "ID de trazabilidad generado automáticamente" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombres\": \"Carlos\",\n  \"apellidos\": \"Perez Gomez\",\n  \"especialidad\": \"Fisioterapia\",\n  \"estadoActivo\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/profesionales",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "profesionales"]
+            },
+            "description": "Crea un nuevo profesional. Guarda automáticamente el id en la variable `profesionalId`."
+          },
+          "response": []
+        },
+        {
+          "name": "Listar todos los profesionales",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Respuesta es array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Trace-Id", "value": "{{traceId}}", "description": "ID de trazabilidad generado automáticamente" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/profesionales",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "profesionales"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar profesional por ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('ID coincide', () => pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get('profesionalId')));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Trace-Id", "value": "{{traceId}}", "description": "ID de trazabilidad generado automáticamente" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/profesionales/{{profesionalId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "profesionales", "{{profesionalId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar profesional",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Especialidad actualizada', () => pm.expect(pm.response.json().especialidad).to.eql('Kinesiologia'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Trace-Id", "value": "{{traceId}}", "description": "ID de trazabilidad generado automáticamente" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombres\": \"Carlos\",\n  \"apellidos\": \"Perez Gomez\",\n  \"especialidad\": \"Kinesiologia\",\n  \"estadoActivo\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/profesionales/{{profesionalId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "profesionales", "{{profesionalId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Ranking por reservas activas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Respuesta es array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Trace-Id", "value": "{{traceId}}", "description": "ID de trazabilidad generado automáticamente" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/profesionales/ranking/reservas-activas",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "profesionales", "ranking", "reservas-activas"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar profesional",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 204 No Content', () => pm.response.to.have.status(204));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "X-Trace-Id", "value": "{{traceId}}", "description": "ID de trazabilidad generado automáticamente" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/profesionales/{{profesionalId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "profesionales", "{{profesionalId}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Clientes",
+      "item": [
+        {
+          "name": "Crear cliente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    pm.collectionVariables.set('clienteId', body.id);",
+                  "    pm.test('Cliente creado correctamente', () => pm.response.to.have.status(201));",
+                  "    pm.test('Tiene id', () => pm.expect(body.id).to.not.be.empty);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Trace-Id", "value": "{{traceId}}", "description": "ID de trazabilidad generado automáticamente" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombres\": \"Maria\",\n  \"apellidos\": \"Lopez Torres\",\n  \"email\": \"maria.lopez@example.com\",\n  \"telefono\": \"+51987654321\",\n  \"estadoActivo\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/clientes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "clientes"]
+            },
+            "description": "Crea un nuevo cliente. Guarda automáticamente el id en la variable `clienteId`."
+          },
+          "response": []
+        },
+        {
+          "name": "Listar todos los clientes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Respuesta es array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Trace-Id", "value": "{{traceId}}", "description": "ID de trazabilidad generado automáticamente" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/clientes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "clientes"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar cliente por ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('ID coincide', () => pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get('clienteId')));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Trace-Id", "value": "{{traceId}}", "description": "ID de trazabilidad generado automáticamente" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/clientes/{{clienteId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "clientes", "{{clienteId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar cliente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Trace-Id", "value": "{{traceId}}", "description": "ID de trazabilidad generado automáticamente" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombres\": \"Maria\",\n  \"apellidos\": \"Lopez Torres\",\n  \"email\": \"maria.nuevo@example.com\",\n  \"telefono\": \"+51999000111\",\n  \"estadoActivo\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/clientes/{{clienteId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "clientes", "{{clienteId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar cliente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 204 No Content', () => pm.response.to.have.status(204));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "X-Trace-Id", "value": "{{traceId}}", "description": "ID de trazabilidad generado automáticamente" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/clientes/{{clienteId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "clientes", "{{clienteId}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Horarios Disponibles",
+      "item": [
+        {
+          "name": "Registrar horario disponible",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    pm.collectionVariables.set('horarioId', body.id);",
+                  "    pm.test('Horario creado correctamente', () => pm.response.to.have.status(201));",
+                  "    pm.test('Tiene id', () => pm.expect(body.id).to.not.be.empty);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Trace-Id", "value": "{{traceId}}", "description": "ID de trazabilidad generado automáticamente" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"profesionalId\": \"{{profesionalId}}\",\n  \"fecha\": \"2026-06-10\",\n  \"horaInicio\": \"09:00:00\",\n  \"horaFin\": \"10:00:00\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/horarios",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "horarios"]
+            },
+            "description": "Registra un horario disponible para un profesional. Guarda el id en `horarioId`."
+          },
+          "response": []
+        },
+        {
+          "name": "Listar horarios por profesional",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Respuesta es array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Trace-Id", "value": "{{traceId}}", "description": "ID de trazabilidad generado automáticamente" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/horarios/profesional/{{profesionalId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "horarios", "profesional", "{{profesionalId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar horario por ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('ID coincide', () => pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get('horarioId')));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Trace-Id", "value": "{{traceId}}", "description": "ID de trazabilidad generado automáticamente" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/horarios/{{horarioId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "horarios", "{{horarioId}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Reservas",
+      "item": [
+        {
+          "name": "Registrar reserva",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    pm.collectionVariables.set('reservaId', body.id);",
+                  "    pm.test('Reserva creada correctamente', () => pm.response.to.have.status(201));",
+                  "    pm.test('Tiene id', () => pm.expect(body.id).to.not.be.empty);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Trace-Id", "value": "{{traceId}}", "description": "ID de trazabilidad generado automáticamente" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fecha\": \"2026-06-10\",\n  \"horaInicio\": \"09:00:00\",\n  \"horaFin\": \"10:00:00\",\n  \"clienteId\": \"{{clienteId}}\",\n  \"profesionalId\": \"{{profesionalId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reservas",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reservas"]
+            },
+            "description": "Registra una nueva reserva. Requiere `clienteId` y `profesionalId` con valores válidos. Guarda el id en `reservaId`."
+          },
+          "response": []
+        },
+        {
+          "name": "Listar todas las reservas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Respuesta es array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Trace-Id", "value": "{{traceId}}", "description": "ID de trazabilidad generado automáticamente" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reservas",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reservas"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Listar reservas agrupadas por fecha",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Respuesta es objeto agrupado', () => pm.expect(pm.response.json()).to.be.an('object'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Trace-Id", "value": "{{traceId}}", "description": "ID de trazabilidad generado automáticamente" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reservas/agrupadas/por-fecha",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reservas", "agrupadas", "por-fecha"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Cancelar reserva",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "X-Trace-Id", "value": "{{traceId}}", "description": "ID de trazabilidad generado automáticamente" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reservas/{{reservaId}}/cancelar",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reservas", "{{reservaId}}", "cancelar"]
+            },
+            "description": "Cancela una reserva existente por su ID."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Health & OpenAPI",
+      "item": [
+        {
+          "name": "Liveness check",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Trace-Id", "value": "{{traceId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/q/health/live",
+              "host": ["{{baseUrl}}"],
+              "path": ["q", "health", "live"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Readiness check",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Trace-Id", "value": "{{traceId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/q/health/ready",
+              "host": ["{{baseUrl}}"],
+              "path": ["q", "health", "ready"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Health general",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Trace-Id", "value": "{{traceId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/q/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["q", "health"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "OpenAPI spec (JSON)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/q/openapi",
+              "host": ["{{baseUrl}}"],
+              "path": ["q", "openapi"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Swagger UI",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/q/swagger-ui",
+              "host": ["{{baseUrl}}"],
+              "path": ["q", "swagger-ui"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
